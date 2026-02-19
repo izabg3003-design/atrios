@@ -74,7 +74,6 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
   
   const prevUnlockCount = useRef(0);
   const prevUnreadCount = useRef(0);
-  // Ref para evitar loops infinitos com o estado de companies
   const companiesRef = useRef<Company[]>([]);
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -95,12 +94,10 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
   const [newCouponDiscount, setNewCouponDiscount] = useState(10);
 
   const loadData = () => {
-    const allNotifications = getGlobalNotifications();
-    setActiveNotifications(allNotifications);
-    
+    setActiveNotifications(getGlobalNotifications());
     const allCompanies = getStoredCompanies().filter(c => c.email !== 'jeferson.goes36@gmail.com');
     
-    // Lógica de Alertas de Desbloqueio
+    // Alertas de Desbloqueio
     const unlockCount = allCompanies.filter(c => c.unlockRequested).length;
     if (unlockCount > prevUnlockCount.current) {
        const newReq = allCompanies.find(c => c.unlockRequested && !companiesRef.current.find(old => old.id === c.id && old.unlockRequested));
@@ -108,20 +105,17 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
     }
     prevUnlockCount.current = unlockCount;
 
-    // Lógica de Alertas de Novas Mensagens
+    // Alertas de Mensagem
     const allMsgs = getMessages();
-    const unreadMsgs = allMsgs.filter(m => m.senderRole === 'user' && !m.read);
-    const unreadCount = unreadMsgs.length;
+    const unreadMessages = allMsgs.filter(m => m.senderRole === 'user' && !m.read);
+    const unreadCount = unreadMessages.length;
     if (unreadCount > prevUnreadCount.current) {
-       const last = unreadMsgs[unreadMsgs.length - 1];
+       const last = unreadMessages[unreadMessages.length - 1];
        const sender = allCompanies.find(c => c.id === last.companyId);
-       if (sender && activeTab !== 'messages') {
-         setLastMessageAlert({ name: sender.name, content: last.content });
-       }
+       if (sender && activeTab !== 'messages') setLastMessageAlert({ name: sender.name, content: last.content });
     }
     prevUnreadCount.current = unreadCount;
 
-    // Atualização dos estados
     setCompanies(allCompanies);
     companiesRef.current = allCompanies;
     setTransactions(getTransactions().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -132,12 +126,11 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
     }
   };
 
-  // Efeito principal de carregamento de dados (polling a cada 5s)
   useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
-  }, [activeTab, selectedCompanyId]); // Removido 'companies' daqui para evitar Error #185
+  }, [activeTab, selectedCompanyId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,21 +192,12 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
   const handleCreateCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCouponCode) return;
-    saveCoupon({ 
-      id: Math.random().toString(36).substr(2, 9), 
-      code: newCouponCode.toUpperCase(), 
-      discountPercentage: newCouponDiscount, 
-      active: true, 
-      createdAt: new Date().toISOString() 
-    });
+    saveCoupon({ id: Math.random().toString(36).substr(2, 9), code: newCouponCode.toUpperCase(), discountPercentage: newCouponDiscount, active: true, createdAt: new Date().toISOString() });
     setCoupons(getCoupons());
     setNewCouponCode('');
   };
 
-  const handleDeleteCoupon = (id: string) => { 
-    removeCoupon(id); 
-    setCoupons(getCoupons()); 
-  };
+  const handleDeleteCoupon = (id: string) => { removeCoupon(id); setCoupons(getCoupons()); };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,15 +207,7 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
     const targetLocale = (targetComp?.lastLocale as Locale) || 'pt-PT';
     let translated = newMessage;
     if (targetLocale !== 'pt-PT') translated = await translateMessage(newMessage, targetLocale);
-    const msg: SupportMessage = { 
-      id: Math.random().toString(36).substr(2, 9), 
-      companyId: selectedCompanyId, 
-      senderRole: 'master', 
-      content: newMessage, 
-      translatedContent: translated, 
-      timestamp: new Date().toISOString(), 
-      read: false 
-    };
+    const msg: SupportMessage = { id: Math.random().toString(36).substr(2, 9), companyId: selectedCompanyId, senderRole: 'master', content: newMessage, translatedContent: translated, timestamp: new Date().toISOString(), read: false };
     saveMessage(msg);
     setMessages(prev => [...prev, msg]);
     setNewMessage('');
@@ -256,13 +232,7 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
 
   const saveConfig = () => {
     if (!imagePreview) { alert(t.masterBannerSelectError); return; }
-    const updated = [...activeNotifications, { 
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(), 
-      imageUrl: imagePreview, 
-      targetAudience, 
-      active: true, 
-      createdAt: new Date().toISOString() 
-    }];
+    const updated = [...activeNotifications, { id: Math.random().toString(36).substr(2, 9).toUpperCase(), imageUrl: imagePreview, targetAudience, active: true, createdAt: new Date().toISOString() }];
     saveGlobalNotifications(updated);
     setActiveNotifications(updated);
     setImagePreview(null);
@@ -281,34 +251,16 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
     loadData();
   };
 
-  const toggleBlock = (company: Company) => { 
-    saveCompany({ ...company, isBlocked: !company.isBlocked }); 
-    loadData(); 
-  };
+  const toggleBlock = (company: Company) => { saveCompany({ ...company, isBlocked: !company.isBlocked }); loadData(); };
 
   const handleDeleteUser = (id: string, name: string) => {
-    if (window.confirm(`${t.masterDeleteUser} "${name}"?`)) { 
-      removeCompany(id); 
-      setCompanies(prev => prev.filter(c => c.id !== id)); 
-      if (selectedCompanyId === id) setSelectedCompanyId(null); 
-    }
+    if (window.confirm(`${t.masterDeleteUser} "${name}"?`)) { removeCompany(id); setCompanies(prev => prev.filter(c => c.id !== id)); if (selectedCompanyId === id) setSelectedCompanyId(null); }
   };
 
   const handleManualUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualProofPreview) { alert(t.masterBannerSelectError); return; }
-    saveCompany({ 
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(), 
-      name: manualUserName, 
-      email: manualUserEmail, 
-      password: manualUserPass, 
-      plan: manualUserPlan, 
-      verified: true, 
-      createdAt: new Date().toISOString(), 
-      isManual: true, 
-      manualPaymentProof: manualProofPreview, 
-      subscriptionExpiresAt: manualUserPlan === PlanType.FREE ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() 
-    });
+    saveCompany({ id: Math.random().toString(36).substr(2, 9).toUpperCase(), name: manualUserName, email: manualUserEmail, password: manualUserPass, plan: manualUserPlan, verified: true, createdAt: new Date().toISOString(), isManual: true, manualPaymentProof: manualProofPreview, subscriptionExpiresAt: manualUserPlan === PlanType.FREE ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
     loadData();
     setShowAddUserModal(false);
     setManualUserName(''); setManualUserEmail(''); setManualUserPass(''); setManualProofPreview(null);
@@ -327,27 +279,19 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-8 font-sans relative">
       
-      {/* Alerta Flutuante de Mensagem */}
       {lastMessageAlert && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10002] bg-blue-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-in slide-in-from-top border border-blue-400">
            <MessageSquare size={24} className="animate-bounce" />
-           <div>
-             <p className="font-black text-xs uppercase tracking-widest">{lastMessageAlert.name}</p>
-             <p className="text-[10px] font-bold opacity-80 truncate max-w-[200px]">{lastMessageAlert.content}</p>
-           </div>
+           <div><p className="font-black text-xs uppercase tracking-widest">{lastMessageAlert.name}</p><p className="text-[10px] font-bold opacity-80 truncate max-w-[200px]">{lastMessageAlert.content}</p></div>
            <button onClick={() => { setActiveTab('messages'); setLastMessageAlert(null); }} className="px-4 py-2 bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest">{t.viewProof}</button>
            <button onClick={() => setLastMessageAlert(null)}><X size={18} /></button>
         </div>
       )}
 
-      {/* Alerta Flutuante de Desbloqueio */}
       {lastUnlockAlert && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10002] bg-amber-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-in slide-in-from-top border border-amber-400">
            <AlertCircle size={24} className="animate-pulse" />
-           <div>
-             <p className="font-black text-xs uppercase tracking-widest">{t.notifyMasterUnlockRequest}</p>
-             <p className="text-[10px] font-bold opacity-80">{lastUnlockAlert}</p>
-           </div>
+           <div><p className="font-black text-xs uppercase tracking-widest">{t.notifyMasterUnlockRequest}</p><p className="text-[10px] font-bold opacity-80">{lastUnlockAlert}</p></div>
            <button onClick={() => { setActiveTab('users'); setLastUnlockAlert(null); }} className="px-4 py-2 bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest">{t.viewProof}</button>
            <button onClick={() => setLastUnlockAlert(null)}><X size={18} /></button>
         </div>
@@ -356,41 +300,25 @@ const MasterPanel: React.FC<MasterPanelProps> = ({ onLogout, locale }) => {
       {showProofModal && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/95 p-12 backdrop-blur-md animate-in fade-in">
            <button onClick={() => setShowProofModal(null)} className="absolute top-8 right-8 p-4 bg-white/10 rounded-full hover:bg-red-500"><X size={32} /></button>
-           <div className="max-w-4xl w-full h-full flex flex-col items-center justify-center gap-6">
-             <h3 className="text-3xl font-black italic">{t.masterViewPaymentProof}</h3>
-             <div className="flex-1 w-full bg-white/5 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
-               <img src={showProofModal} className="w-full h-full object-contain p-4" alt="Comprovativo" />
-             </div>
-           </div>
+           <div className="max-w-4xl w-full h-full flex flex-col items-center justify-center gap-6"><h3 className="text-3xl font-black italic">{t.masterViewPaymentProof}</h3><div className="flex-1 w-full bg-white/5 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl"><img src={showProofModal} className="w-full h-full object-contain p-4" alt="Comprovativo" /></div></div>
         </div>
       )}
 
       {showAddUserModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm animate-in fade-in">
            <div className="bg-slate-900 w-full max-w-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
-              <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h2 className="text-2xl font-black italic flex items-center gap-3 text-amber-500 uppercase"><UserPlus size={28} /> {t.masterCreateManualUser}</h2>
-                <button onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={24} /></button>
-              </div>
+              <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5"><h2 className="text-2xl font-black italic flex items-center gap-3 text-amber-500 uppercase"><UserPlus size={28} /> {t.masterCreateManualUser}</h2><button onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={24} /></button></div>
               <form onSubmit={handleManualUserSubmit} className="p-10 space-y-8 max-h-[70vh] overflow-y-auto no-scrollbar">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input required type="text" value={manualUserName} onChange={e => setManualUserName(e.target.value)} placeholder={t.companyLabel} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 outline-none font-bold" />
                     <input required type="email" value={manualUserEmail} onChange={e => setManualUserEmail(e.target.value)} placeholder={t.emailLabel} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 outline-none font-bold" />
                     <input required type="password" value={manualUserPass} onChange={e => setManualUserPass(e.target.value)} placeholder={t.passwordLabel} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 outline-none font-bold" />
                     <select value={manualUserPlan} onChange={e => setManualUserPlan(e.target.value as PlanType)} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 outline-none font-bold uppercase text-xs">
-                       <option value={PlanType.FREE}>{t.planFree}</option>
-                       <option value={PlanType.PREMIUM_MONTHLY}>{t.planMonthly}</option>
-                       <option value={PlanType.PREMIUM_ANNUAL}>{t.planAnnual}</option>
+                       <option value={PlanType.FREE}>{t.planFree}</option><option value={PlanType.PREMIUM_MONTHLY}>{t.planMonthly}</option><option value={PlanType.PREMIUM_ANNUAL}>{t.planAnnual}</option>
                     </select>
                  </div>
-                 <label className={`border-4 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 h-48 relative ${manualProofPreview ? 'bg-emerald-500/5' : ''}`}>
-                   {manualProofPreview ? <img src={manualProofPreview} className="h-24 rounded-lg shadow-xl" /> : <div className="flex flex-col items-center"><Upload size={24} className="mb-2 text-slate-400" /><span className="text-[10px] font-black uppercase">{t.masterUploadClick}</span></div>}
-                   <input required type="file" className="hidden" accept="image/*" onChange={e => {const f=e.target.files?.[0]; if(f){const r=new FileReader(); r.onloadend=()=>setManualProofPreview(r.result as string); r.readAsDataURL(f);}}} />
-                 </label>
-                 <div className="flex gap-4">
-                   <button type="submit" className="flex-1 py-5 bg-amber-500 text-slate-950 rounded-[1.5rem] font-black text-lg hover:bg-amber-400 shadow-xl uppercase">{t.masterAddUser}</button>
-                   <button type="button" onClick={() => setShowAddUserModal(false)} className="px-10 py-5 bg-white/5 rounded-[1.5rem] font-black text-sm uppercase">{t.cancel}</button>
-                 </div>
+                 <label className={`border-4 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 h-48 relative ${manualProofPreview ? 'bg-emerald-500/5' : ''}`}>{manualProofPreview ? <img src={manualProofPreview} className="h-24 rounded-lg shadow-xl" /> : <div className="flex flex-col items-center"><Upload size={24} className="mb-2 text-slate-400" /><span className="text-[10px] font-black uppercase">{t.masterUploadClick}</span></div>}<input required type="file" className="hidden" accept="image/*" onChange={e => {const f=e.target.files?.[0]; if(f){const r=new FileReader(); r.onloadend=()=>setManualProofPreview(r.result as string); r.readAsDataURL(f);}}} /></label>
+                 <div className="flex gap-4"><button type="submit" className="flex-1 py-5 bg-amber-500 text-slate-950 rounded-[1.5rem] font-black text-lg hover:bg-amber-400 shadow-xl uppercase">{t.masterAddUser}</button><button type="button" onClick={() => setShowAddUserModal(false)} className="px-10 py-5 bg-white/5 rounded-[1.5rem] font-black text-sm uppercase">{t.cancel}</button></div>
               </form>
            </div>
         </div>

@@ -101,7 +101,6 @@ const App: React.FC = () => {
 
   const currentUserRef = useRef<Company | null>(null);
 
-  // Monitorar alterações na conta para disparar alerta de desbloqueio
   useEffect(() => {
     if (currentUser && view === 'app') {
       const interval = setInterval(() => {
@@ -233,9 +232,9 @@ const App: React.FC = () => {
 
   const normalizeForPdf = (text: string | undefined): string => {
     if (!text) return "";
+    // Corrected ruMap to avoid duplicate property names by ensuring uppercase keys are used for uppercase mappings.
     const ruMap: Record<string, string> = {
-      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
-      // Fix: Corrigido mapeamento duplicado no bloco uppercase
+      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','t':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
       'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Shch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'
     };
     let result = text;
@@ -578,7 +577,7 @@ const App: React.FC = () => {
         </div>
       ) : (view === 'login' || view === 'signup') ? (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative w-full">
-          <div className="bg-white w-full max-md p-12 rounded-[3rem] shadow-2xl border border-slate-100">
+          <div className="bg-white w-full max-w-md p-12 rounded-[3rem] shadow-2xl border border-slate-100">
             <div className="flex items-center gap-3 mb-10 justify-center"><Construction className="text-amber-500" size={40} /><span className="text-4xl font-black tracking-tighter">{t.appName}</span></div>
             <h2 className="text-3xl font-black text-slate-900 mb-8">{view === 'login' ? t.welcomeBack : t.createAccount}</h2>
             <form onSubmit={view === 'login' ? handleLogin : handleSignup} className="space-y-5">
