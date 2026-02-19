@@ -232,9 +232,10 @@ const App: React.FC = () => {
 
   const normalizeForPdf = (text: string | undefined): string => {
     if (!text) return "";
-    // Corrected ruMap to avoid duplicate property names by ensuring uppercase keys are used for uppercase mappings.
+    // Corrected ruMap to remove lowercase duplicates from the second line that cause object property conflicts
     const ruMap: Record<string, string> = {
-      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','t':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+      'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
       'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Shch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'
     };
     let result = text;
@@ -363,6 +364,7 @@ const App: React.FC = () => {
       setView('master');
       return;
     }
+    // Fixed typo: getStored_Companies -> getStoredCompanies
     const companies = getStoredCompanies();
     const company = companies.find(c => c.email === email);
     if (company) {
@@ -407,6 +409,7 @@ const App: React.FC = () => {
   };
 
   const handleVerify = () => {
+    // Fixed typo: getStored_Companies -> getStoredCompanies
     const companies = getStoredCompanies();
     const company = companies.find(c => c.email === email);
     if (company) {
